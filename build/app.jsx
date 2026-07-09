@@ -138,37 +138,50 @@ import ReactDOM from "react-dom/client";
       { id: "config",     label: "Configuración",        icon: "⚙️" },
     ];
 
-    function Sidebar({ activo, setActivo }) {
+    function Sidebar({ activo, setActivo, open, onClose }) {
+      const seleccionar = (id) => { setActivo(id); onClose(); };
       return (
-        <aside className="w-64 shrink-0 bg-white border-r border-titanio h-screen sticky top-0 flex flex-col">
-          <div className="px-6 py-6 border-b border-titanio">
-            <div className="flex items-center gap-3">
-              <img src="./logo.jpeg" alt="Quesería La Granja"
-                className="w-12 h-12 rounded-full object-cover ring-2 ring-marca/30 shadow-card shrink-0" />
-              <div>
-                <div className="font-extrabold text-[15px] leading-tight tracking-tight">La Granja</div>
-                <div className="text-xs text-pizarra">Gestión Financiera</div>
+        <>
+          {/* Overlay móvil */}
+          {open && (
+            <div onClick={onClose}
+              className="fixed inset-0 bg-carbon/40 z-30 lg:hidden" aria-hidden="true" />
+          )}
+          <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-titanio flex flex-col
+            transform transition-transform duration-300 ease-out
+            lg:static lg:translate-x-0 lg:h-screen lg:sticky lg:top-0
+            ${open ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}>
+            <div className="px-6 py-6 border-b border-titanio flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img src="./logo.jpeg" alt="Quesería La Granja"
+                  className="w-12 h-12 rounded-full object-cover ring-2 ring-marca/30 shadow-card shrink-0" />
+                <div>
+                  <div className="font-extrabold text-[15px] leading-tight tracking-tight">La Granja</div>
+                  <div className="text-xs text-pizarra">Gestión Financiera</div>
+                </div>
               </div>
+              <button onClick={onClose} aria-label="Cerrar menú"
+                className="lg:hidden text-pizarra hover:text-carbon text-2xl leading-none px-1">×</button>
             </div>
-          </div>
-          <nav className="flex-1 px-3 py-4 space-y-1">
-            {NAV.map(item => {
-              const on = activo === item.id;
-              return (
-                <button key={item.id} onClick={() => setActivo(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
-                    ${on ? "bg-marca text-white shadow-card" : "text-pizarra hover:bg-humo hover:text-carbon"}`}>
-                  <span className="text-base">{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-          <div className="px-6 py-4 border-t border-titanio text-xs text-pizarra">
-            <div className="font-semibold text-carbon">{DB.empresa.periodo}</div>
-            <div>{DB.empresa.rut}</div>
-          </div>
-        </aside>
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+              {NAV.map(item => {
+                const on = activo === item.id;
+                return (
+                  <button key={item.id} onClick={() => seleccionar(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                      ${on ? "bg-marca text-white shadow-card" : "text-pizarra hover:bg-humo hover:text-carbon"}`}>
+                    <span className="text-base">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+            <div className="px-6 py-4 border-t border-titanio text-xs text-pizarra">
+              <div className="font-semibold text-carbon">{DB.empresa.periodo}</div>
+              <div>{DB.empresa.rut}</div>
+            </div>
+          </aside>
+        </>
       );
     }
 
@@ -556,6 +569,7 @@ import ReactDOM from "react-dom/client";
        ============================================================ */
     function App() {
       const [activo, setActivo] = useState("dashboard");
+      const [menuAbierto, setMenuAbierto] = useState(false);
       const f = useFinanzas();
       const vistas = {
         dashboard:  <Dashboard f={f} />,
@@ -565,10 +579,27 @@ import ReactDOM from "react-dom/client";
         impuestos:  <Impuestos f={f} />,
         config:     <Config f={f} />,
       };
+      const tituloActivo = NAV.find(n => n.id === activo)?.label || "";
       return (
         <div className="flex min-h-screen">
-          <Sidebar activo={activo} setActivo={setActivo} />
-          <main className="flex-1 px-8 py-8 max-w-7xl">{vistas[activo]}</main>
+          <Sidebar activo={activo} setActivo={setActivo}
+            open={menuAbierto} onClose={() => setMenuAbierto(false)} />
+          <div className="flex-1 min-w-0 flex flex-col">
+            {/* Topbar móvil */}
+            <header className="lg:hidden sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-titanio px-4 py-3 flex items-center gap-3">
+              <button onClick={() => setMenuAbierto(true)} aria-label="Abrir menú"
+                className="p-2 -ml-1 rounded-lg hover:bg-humo text-carbon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+              </button>
+              <img src="./logo.jpeg" alt="" className="w-8 h-8 rounded-full object-cover ring-2 ring-marca/30" />
+              <span className="font-bold text-sm truncate">{tituloActivo}</span>
+            </header>
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 lg:py-8 w-full max-w-7xl mx-auto lg:mx-0">
+              {vistas[activo]}
+            </main>
+          </div>
         </div>
       );
     }
